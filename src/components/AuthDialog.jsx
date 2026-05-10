@@ -171,26 +171,11 @@ export default function AuthDialog({ open, defaultTab = 0, onClose, onLoginSucce
         </IconButton>
 
         <Box
-          sx={{
-            width: 84,
-            height: 84,
-            bgcolor: '#042c53',
-            borderRadius: 3,
-            border: '1.5px solid rgba(255,255,255,0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            mx: 'auto',
-            mb: 1.5,
-          }}
-        >
-          <Box
-            component="img"
-            src="/logos/logo_branca.png"
-            alt="PRAIÔ"
-            sx={{ width: '78%', objectFit: 'contain' }}
-          />
-        </Box>
+          component="img"
+          src="/logos/logo_azul.png"
+          alt="PRAIÔ"
+          sx={{ height: 84, width: 'auto', objectFit: 'contain', mx: 'auto', display: 'block', mb: 1.5 }}
+        />
 
         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.75)', fontWeight: 400 }}>
           {tab === 0 ? 'Entre na sua conta' : 'Crie sua conta gratuita'}

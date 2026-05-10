@@ -128,6 +128,23 @@ async function fetchAirQuality(lat, lon) {
   return res.json();
 }
 
+// ── API: Reverse Geocode ───────────────────────────────────────────────────
+
+/** Dado lat/lon, retorna o nome da cidade mais próxima via Nominatim */
+export async function reverseGeocode(lat, lon) {
+  const url = `${NOMINATIM}/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
+  const res = await fetch(url, {
+    headers: { 'Accept-Language': 'pt-BR,pt;q=0.9', 'User-Agent': 'PraioApp/1.0' },
+  });
+  if (!res.ok) throw new Error('Erro na geocodificação reversa');
+  const data = await res.json();
+  const addr = data.address || {};
+  const city = addr.city || addr.town || addr.village || addr.municipality || addr.county;
+  if (!city) throw new Error('Localização não identificada');
+  const state = addr.state_code?.toUpperCase() || STATE_CODES[addr.state] || addr.state || '';
+  return state ? `${city}, ${state}` : city;
+}
+
 // ── Export principal ───────────────────────────────────────────────────────
 
 export async function searchBeachesByCity(cityName) {

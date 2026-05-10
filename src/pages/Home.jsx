@@ -1,32 +1,34 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Chip, InputBase, Container, Stack,
-  Grid, CircularProgress, Alert, Skeleton,
+  CircularProgress, Alert, Skeleton,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
+import SearchIcon           from '@mui/icons-material/Search';
+import WifiTetheringIcon    from '@mui/icons-material/WifiTethering';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import AuthDialog from '../components/AuthDialog';
-import BeachCard from '../components/BeachCard';
+import Header      from '../components/Header';
+import Footer      from '../components/Footer';
+import AuthDialog  from '../components/AuthDialog';
+import BeachCard   from '../components/BeachCard';
 import { getUser } from '../services/authService';
-import { searchBeachesByCity } from '../services/beachService';
+import { searchBeachesByCity, reverseGeocode } from '../services/beachService';
 
 const POPULAR_TAGS = ['Copacabana, RJ', 'Itanhaém, SP', 'Jericoacoara, CE'];
 
-// Unsplash beach photo (free to use)
 const BG_IMAGE =
   'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80';
 
+// Alturas do header para offset (deve bater com Header.jsx)
+const HEADER_HEIGHT = { xs: '60px', md: '76px' };
+
 function BeachCardSkeleton() {
   return (
-    <Box sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(24,95,165,0.12)' }}>
-      <Skeleton variant="rectangular" height={140} sx={{ bgcolor: 'rgba(24,95,165,0.08)' }} />
+    <Box sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(24,95,165,0.1)', bgcolor: '#fff' }}>
+      <Skeleton variant="rectangular" height={150} sx={{ bgcolor: 'rgba(24,95,165,0.07)' }} />
       <Box sx={{ p: 2.5 }}>
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} height={28} sx={{ mb: 0.5, bgcolor: 'rgba(24,95,165,0.06)' }} />
+        {[100, 80, 80, 70].map((w, i) => (
+          <Skeleton key={i} height={24} width={`${w}%`} sx={{ mb: 1, bgcolor: 'rgba(24,95,165,0.05)' }} />
         ))}
       </Box>
     </Box>
@@ -34,19 +36,52 @@ function BeachCardSkeleton() {
 }
 
 export default function Home() {
-  const location  = useLocation();
-  const navigate  = useNavigate();
-  const user      = getUser();
+  const location   = useLocation();
+  const navigate   = useNavigate();
+  const user       = getUser();
   const resultsRef = useRef(null);
 
-  const [query,   setQuery]   = useState('');
-  const [beaches, setBeaches] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
-  const [searched, setSearched] = useState(false);
+  const [query,      setQuery]      = useState('');
+  const [beaches,    setBeaches]    = useState([]);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState('');
+  const [searched,   setSearched]   = useState(false);
+  const [geoLoading,  setGeoLoading]  = useState(false);
+  const [geoCity,     setGeoCity]     = useState('');
+  const [geoAttempted, setGeoAttempted] = useState(false);
 
-  const dialogOpen   = location.pathname === '/login' || location.pathname === '/cadastro';
-  const defaultTab   = location.pathname === '/cadastro' ? 1 : 0;
+  // Auto-detect user location on first load
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    setGeoAttempted(true);
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const city = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+          setGeoCity(city);
+          await handleSearch(city);
+        } catch {
+          // silently ignore — user sees the intro state
+        } finally {
+          setGeoLoading(false);
+        }
+      },
+      () => {
+        // permission denied or error — just hide the spinner
+        setGeoLoading(false);
+      },
+      { timeout: 8000 }
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dialogOpen = location.pathname === '/login' || location.pathname === '/cadastro';
+  const defaultTab = location.pathname === '/cadastro' ? 1 : 0;
+
+  const scrollToResults = () => {
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const handleSearch = async (searchQuery) => {
     const q = (searchQuery || query).trim();
@@ -56,12 +91,7 @@ export default function Home() {
     setError('');
     setBeaches([]);
     setSearched(true);
-
-    // Scroll to results after a short delay
-    setTimeout(() => {
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 300);
-
+    setTimeout(scrollToResults, 200);
     try {
       const results = await searchBeachesByCity(q);
       setBeaches(results);
@@ -72,10 +102,6 @@ export default function Home() {
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') handleSearch();
-  };
-
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header
@@ -83,64 +109,55 @@ export default function Home() {
         onCadastro={() => navigate('/cadastro')}
       />
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      {/* Offset para header fixo */}
+      <Box sx={{ height: HEADER_HEIGHT, flexShrink: 0 }} />
+
+      {/* ── Hero ────────────────────────────────────────────────────────── */}
       <Box
         sx={{
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
-          minHeight: { xs: '82vh', md: '90vh' },
+          minHeight: { xs: 'calc(100vh - 60px)', md: 'calc(100vh - 76px)' },
           overflow: 'hidden',
         }}
       >
-        {/* Background photo */}
+        {/* Foto de fundo */}
         <Box
           component="img"
           src={BG_IMAGE}
           alt=""
-          aria-hidden="true"
+          aria-hidden
           sx={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center 40%',
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover', objectPosition: 'center 40%',
             zIndex: 0,
           }}
         />
 
-        {/* Dark blue overlay */}
+        {/* Overlay azul escuro */}
         <Box
           sx={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(160deg, rgba(2,16,34,0.72) 0%, rgba(4,44,83,0.65) 50%, rgba(24,95,165,0.55) 100%)',
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(160deg, rgba(2,16,34,0.78) 0%, rgba(4,44,83,0.68) 50%, rgba(24,95,165,0.52) 100%)',
             zIndex: 1,
           }}
         />
 
-        {/* Bottom fade */}
+        {/* Fade inferior */}
         <Box
           sx={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 100,
-            background: 'linear-gradient(to top, rgba(230,241,251,1) 0%, transparent 100%)',
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            height: 120,
+            background: 'linear-gradient(to top, #E6F1FB 0%, transparent 100%)',
             zIndex: 2,
           }}
         />
 
         <Container
           maxWidth="md"
-          sx={{
-            position: 'relative',
-            zIndex: 3,
-            py: { xs: 8, md: 12 },
-            textAlign: 'center',
-          }}
+          sx={{ position: 'relative', zIndex: 3, py: { xs: 8, md: 10 }, textAlign: 'center' }}
         >
           {/* Badge */}
           <Chip
@@ -159,37 +176,38 @@ export default function Home() {
             }}
           />
 
-          {/* Headline */}
+          {/* Título */}
           <Typography
             component="h1"
             sx={{
               color: '#fff',
-              fontSize: { xs: '2.4rem', sm: '3rem', md: '3.8rem' },
+              fontSize: { xs: '2.2rem', sm: '3rem', md: '3.8rem' },
               fontWeight: 800,
               lineHeight: 1.1,
               letterSpacing: '-0.02em',
-              mb: 2,
-              textShadow: '0 2px 12px rgba(0,0,0,0.3)',
+              mb: 2.5,
+              textShadow: '0 2px 16px rgba(0,0,0,0.35)',
             }}
           >
             Conheça a Qualidade<br />
             das Nossas Praias
           </Typography>
 
-          {/* Subtitle */}
+          {/* Subtítulo */}
           <Typography
             sx={{
               color: 'rgba(255,255,255,0.78)',
               fontSize: { xs: '1rem', md: '1.15rem' },
               mb: 4,
-              lineHeight: 1.6,
+              lineHeight: 1.7,
+              maxWidth: 500,
+              mx: 'auto',
             }}
           >
-            Informações em tempo real sobre qualidade do ar, água e<br />
-            condições das praias brasileiras
+            Informações em tempo real sobre qualidade do ar, água e condições das praias brasileiras
           </Typography>
 
-          {/* Search bar */}
+          {/* Barra de pesquisa */}
           <Box
             sx={{
               display: 'flex',
@@ -209,30 +227,27 @@ export default function Home() {
               fullWidth
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               sx={{ fontSize: '0.95rem', color: 'text.primary', py: 0.25 }}
             />
             <Button
               variant="contained"
-              size="medium"
               onClick={() => handleSearch()}
               disabled={loading}
               sx={{
-                ml: 1,
-                px: { xs: 2, sm: 3 },
-                flexShrink: 0,
+                ml: 1, px: { xs: 2, sm: 3 }, flexShrink: 0,
                 background: 'linear-gradient(135deg, #185FA5 0%, #378ADD 100%)',
                 '&:hover': { background: 'linear-gradient(135deg, #042c53 0%, #185FA5 100%)' },
-                '&.Mui-disabled': { bgcolor: '#ccc' },
+                '&.Mui-disabled': { opacity: 0.6 },
               }}
             >
               {loading ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : 'Buscar'}
             </Button>
           </Box>
 
-          {/* Popular tags */}
-          <Stack direction="row" alignItems="center" justifyContent="center" flexWrap="wrap" sx={{ mt: 2.5, gap: 1 }}>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>
+          {/* Tags populares */}
+          <Box sx={{ mt: 2.5, display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
               Popular:
             </Typography>
             {POPULAR_TAGS.map((tag) => (
@@ -252,45 +267,69 @@ export default function Home() {
                 }}
               />
             ))}
-          </Stack>
+          </Box>
 
-          {/* Scroll hint */}
+          {/* Botão Explorar (funcional) */}
           <Box
+            onClick={scrollToResults}
             sx={{
-              mt: { xs: 4, md: 6 },
-              display: 'flex',
+              mt: { xs: 5, md: 7 },
+              display: 'inline-flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: 0.5,
-              opacity: 0.6,
+              cursor: 'pointer',
+              opacity: 0.65,
+              transition: 'opacity 0.2s',
+              '&:hover': { opacity: 1 },
             }}
           >
-            <Typography variant="caption" sx={{ color: '#fff', letterSpacing: '0.15em', fontWeight: 600, fontSize: '0.7rem' }}>
+            <Typography
+              variant="caption"
+              sx={{ color: '#fff', letterSpacing: '0.15em', fontWeight: 600, fontSize: '0.7rem' }}
+            >
               EXPLORAR
             </Typography>
-            <KeyboardArrowDownIcon sx={{ color: '#fff', fontSize: '1.4rem', animation: 'bounce 2s infinite' }} />
+            <KeyboardArrowDownIcon sx={{ color: '#fff', fontSize: '1.6rem', animation: 'bounce 2s infinite' }} />
           </Box>
         </Container>
       </Box>
 
-      {/* ── Results ──────────────────────────────────────────────────────── */}
+      {/* ── Resultados ──────────────────────────────────────────────────── */}
       <Box
         ref={resultsRef}
-        sx={{ flex: 1, bgcolor: '#E6F1FB', py: { xs: 4, md: 6 } }}
+        sx={{ flex: 1, bgcolor: '#E6F1FB', py: { xs: 5, md: 8 } }}
       >
         <Container maxWidth="lg">
-          {/* Not searched yet → show intro */}
-          {!searched && !loading && (
+
+          {/* Detectando localização */}
+          {geoLoading && !searched && (
+            <Box sx={{ textAlign: 'center', py: { xs: 6, md: 10 } }}>
+              <CircularProgress size={36} sx={{ color: '#185FA5', mb: 2 }} />
+              <Typography variant="h6" sx={{ color: '#042c53', fontWeight: 600, mb: 0.5 }}>
+                Detectando sua localização…
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Buscando as praias mais próximas de você
+              </Typography>
+            </Box>
+          )}
+
+          {/* Estado inicial — só aparece se geolocalização não foi tentada */}
+          {!searched && !loading && !geoLoading && !geoAttempted && (
             <Box sx={{ textAlign: 'center', py: { xs: 4, md: 6 } }}>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#042c53', mb: 1 }}>
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 800, color: '#042c53', mb: 1.5, fontSize: { xs: '1.6rem', md: '2rem' } }}
+              >
                 🏖️ Descubra praias brasileiras
               </Typography>
-              <Typography sx={{ color: 'text.secondary', maxWidth: 480, mx: 'auto' }}>
-                Digite o nome de uma cidade acima e veja as praias da região com dados de
-                clima, qualidade do ar e condições do mar em tempo real.
+              <Typography sx={{ color: 'text.secondary', maxWidth: 500, mx: 'auto', lineHeight: 1.7 }}>
+                Digite o nome de uma cidade e veja as praias da região com dados de clima,
+                qualidade do ar e condições do mar em tempo real.
               </Typography>
 
-              <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap" sx={{ mt: 3, gap: 1.5 }}>
+              <Stack direction="row" justifyContent="center" flexWrap="wrap" sx={{ mt: 4, gap: 1.5 }}>
                 {[
                   { icon: '☀️', label: 'Clima atual' },
                   { icon: '💨', label: 'Qualidade do ar' },
@@ -299,13 +338,16 @@ export default function Home() {
                 ].map(({ icon, label }) => (
                   <Chip
                     key={label}
-                    label={`${icon} ${label}`}
+                    label={`${icon}  ${label}`}
                     sx={{
                       bgcolor: '#fff',
                       border: '1px solid rgba(24,95,165,0.15)',
                       fontWeight: 500,
-                      fontSize: '0.85rem',
-                      px: 0.5,
+                      fontSize: '0.875rem',
+                      px: 1,
+                      py: 0.5,
+                      height: 'auto',
+                      boxShadow: '0 2px 8px rgba(24,95,165,0.08)',
                     }}
                   />
                 ))}
@@ -313,21 +355,24 @@ export default function Home() {
             </Box>
           )}
 
-          {/* Loading skeletons */}
+          {/* Loading */}
           {loading && (
             <Box>
-              <Skeleton height={36} width={280} sx={{ mb: 3, bgcolor: 'rgba(24,95,165,0.08)' }} />
-              <Grid container spacing={3}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
+                <Skeleton height={36} width={220} sx={{ mb: 1, bgcolor: 'rgba(24,95,165,0.07)', borderRadius: 2 }} />
+                <Skeleton height={24} width={160} sx={{ bgcolor: 'rgba(24,95,165,0.05)', borderRadius: 2 }} />
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Box key={i} sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' }, minWidth: { sm: 260 } }}>
                     <BeachCardSkeleton />
-                  </Grid>
+                  </Box>
                 ))}
-              </Grid>
+              </Box>
             </Box>
           )}
 
-          {/* Error */}
+          {/* Erro */}
           {error && !loading && (
             <Alert
               severity="warning"
@@ -342,46 +387,58 @@ export default function Home() {
             </Alert>
           )}
 
-          {/* Results */}
+          {/* Cards de praias */}
           {!loading && !error && beaches.length > 0 && (
             <Box>
-              <Stack direction="row" alignItems="baseline" spacing={1.5} sx={{ mb: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: '#042c53' }}>
-                  Praias encontradas
+              <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: '#042c53', mb: 1 }}>
+                  {geoCity && query === geoCity ? '📍 Praias perto de você' : 'Praias encontradas'}
                 </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  {beaches.length} resultado{beaches.length !== 1 ? 's' : ''} · dados ao vivo
-                </Typography>
-              </Stack>
+                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                  <Chip
+                    label={`${beaches.length} resultado${beaches.length !== 1 ? 's' : ''}`}
+                    size="small"
+                    sx={{ bgcolor: 'rgba(24,95,165,0.1)', color: '#185FA5', fontWeight: 600 }}
+                  />
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    · dados em tempo real
+                  </Typography>
+                </Box>
+              </Box>
 
-              <Grid container spacing={3}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
                 {beaches.map((beach) => (
-                  <Grid key={beach.id} size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Box
+                    key={beach.id}
+                    sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' }, minWidth: { sm: 260 } }}
+                  >
                     <BeachCard beach={beach} />
-                  </Grid>
+                  </Box>
                 ))}
-              </Grid>
+              </Box>
 
               <Typography
                 variant="caption"
-                sx={{ display: 'block', textAlign: 'center', mt: 4, color: 'text.secondary' }}
+                sx={{ display: 'block', textAlign: 'center', mt: 5, color: 'text.secondary', opacity: 0.7 }}
               >
-                Localização: OpenStreetMap · Clima: Open-Meteo · Qualidade do ar: Open-Meteo AQI
+                Localização: OpenStreetMap · Clima & Qualidade do ar: Open-Meteo
               </Typography>
             </Box>
           )}
 
-          {/* Searched but no results */}
+          {/* Sem resultados */}
           {!loading && !error && searched && beaches.length === 0 && (
-            <Box sx={{ textAlign: 'center', py: 6 }}>
-              <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-                Nenhuma praia encontrada para "<strong>{query}</strong>"
+            <Box sx={{ textAlign: 'center', py: { xs: 6, md: 10 } }}>
+              <Typography variant="h2" sx={{ mb: 2 }}>🏝️</Typography>
+              <Typography variant="h6" sx={{ color: '#042c53', fontWeight: 700, mb: 1 }}>
+                Nenhuma praia encontrada para "{query}"
               </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-                Tente adicionar o estado, ex: "Santos, SP" ou "Natal, RN"
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Tente incluir o estado — ex: "Santos, SP" ou "Natal, RN"
               </Typography>
             </Box>
           )}
+
         </Container>
       </Box>
 
@@ -394,11 +451,10 @@ export default function Home() {
         onLoginSuccess={() => navigate('/')}
       />
 
-      {/* Bounce animation */}
       <style>{`
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(6px); }
+          50%       { transform: translateY(8px); }
         }
       `}</style>
     </Box>
