@@ -1,34 +1,29 @@
-/* San Francisco system font stack — uses SF Pro on Apple devices natively */
-*, *::before, *::after {
-  box-sizing: border-box;
+/* Reset global + diretivas Tailwind */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variáveis CSS da identidade visual do Praiô */
+:root {
+  --cor-marinho: #042c53;
+  --cor-primary: #185FA5;
+  --cor-azul:    #378ADD;
+  --cor-teal:    #0F6E56;
+  --cor-fundo:   #E6F1FB;
 }
 
-html {
+/* Fundo padrão da aplicação */
+body {
+  background-color: var(--cor-fundo);
+  color: #1a1a2e;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+               'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  scroll-behavior: smooth;
 }
 
-body {
+/* Remove margin padrão do body */
+* {
   margin: 0;
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    'SF Pro Display',
-    'SF Pro Text',
-    'Segoe UI',
-    'Helvetica Neue',
-    Arial,
-    sans-serif;
-  background-color: #E6F1FB;
-  color: #1a2e44;
-}
-
-img {
-  display: block;
-  max-width: 100%;
-}
-
-a {
-  color: inherit;
+  box-sizing: border-box;
 }
