@@ -2,21 +2,24 @@ import { BrowserRouter } from 'react-router-dom'
 import { Header } from './components/Header'
 import { Footer } from './components/Footer'
 import { AppRoutes } from './routes/AppRoutes'
+import { AuthProvider } from './context/AuthContext'
 
 /**
  * Componente raiz da aplicação.
- * Configura o roteador e monta a estrutura de layout com header e footer fixos.
+ * AuthProvider envolve todo o app para disponibilizar o contexto de autenticação.
  */
 export function App() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-fundo">
-        <Header />
-        <div className="flex-1">
-          <AppRoutes />
+    <AuthProvider>
+      <BrowserRouter>
+        <div className="min-h-screen flex flex-col bg-fundo">
+          <Header />
+          <div className="flex-1">
+            <AppRoutes />
+          </div>
+          <Footer />
         </div>
-        <Footer />
-      </div>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }

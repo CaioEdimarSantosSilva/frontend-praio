@@ -54,4 +54,16 @@ export async function listarMelhoresPraias(scoreMinimo = 7.0): Promise<BeachSumm
   return data
 }
 
+/**
+ * Interceptor de requisição — injeta o token JWT no header Authorization
+ * se houver um token salvo no localStorage.
+ */
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('praio_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 export default api
