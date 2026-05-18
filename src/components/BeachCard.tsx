@@ -61,42 +61,41 @@ export function BeachCard({ praia }: BeachCardProps) {
                  transition-all duration-300 hover:-translate-y-1.5"
       aria-label={`Ver condições da praia ${praia.nome}`}
     >
-      {/* ── Topo escuro: imagem + info principal ── */}
-      <div className="relative bg-marinho overflow-hidden">
-        {/* Imagem com overlay */}
-        <div className="h-40 relative">
-          <img
-            src={`/images/praias/${praia.imagem}`}
-            alt={`Praia ${praia.nome}`}
-            className="w-full h-full object-cover opacity-50 group-hover:scale-105
-                       transition-transform duration-500"
-            onError={(e) => { e.currentTarget.style.display = 'none' }}
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-marinho via-marinho/60 to-transparent" />
+      {/* ── Topo: imagem limpa + badges sobrepostos ── */}
+      <div className="relative h-44 overflow-hidden bg-gray-100">
+        <img
+          src={`/images/praias/${praia.imagem}`}
+          alt={`Praia ${praia.nome}`}
+          className="w-full h-full object-cover group-hover:scale-105
+                     transition-transform duration-500"
+          onError={(e) => { e.currentTarget.style.display = 'none' }}
+          loading="lazy"
+        />
 
-          {/* Badge de balneabilidade */}
-          <div className={`absolute top-3 right-3 flex items-center gap-1.5 text-xs
-                           font-semibold px-2.5 py-1 rounded-full ${bConfig.badge}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${bConfig.dot}`} aria-hidden="true" />
-            {bConfig.label}
-          </div>
+        {/* Sombra mínima só para os textos dos badges serem legíveis */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
-          {/* Score */}
-          {praia.score > 0 && (
-            <div className="absolute top-3 left-3 bg-black/40 backdrop-blur-sm
-                            text-white text-xs font-bold px-2.5 py-1 rounded-full">
-              ★ {praia.score.toFixed(1)}
-            </div>
-          )}
+        {/* Badge de balneabilidade */}
+        <div className={`absolute top-3 right-3 flex items-center gap-1.5 text-xs
+                         font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm ${bConfig.badge}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${bConfig.dot}`} aria-hidden="true" />
+          {bConfig.label}
         </div>
 
-        {/* Nome e localização */}
-        <div className="px-4 pt-2 pb-4">
-          <h3 className="font-bold text-white text-lg leading-tight group-hover:text-azul transition-colors">
+        {/* Score */}
+        {praia.score > 0 && (
+          <div className="absolute top-3 left-3 bg-black/40 backdrop-blur-sm
+                          text-white text-xs font-bold px-2.5 py-1 rounded-full">
+            ★ {praia.score.toFixed(1)}
+          </div>
+        )}
+
+        {/* Nome e localização sobrepostos na base da imagem */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 pt-6">
+          <h3 className="font-bold text-white text-lg leading-tight drop-shadow">
             {praia.nome}
           </h3>
-          <p className="text-white/50 text-xs flex items-center gap-1 mt-0.5">
+          <p className="text-white/80 text-xs flex items-center gap-1 mt-0.5 drop-shadow">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round"
                 d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />

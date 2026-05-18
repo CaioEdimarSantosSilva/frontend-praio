@@ -1,12 +1,14 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Home }         from '../pages/Home'
-import { BeachDetail }  from '../pages/BeachDetail'
-import { Sobre }        from '../pages/Sobre'
-import { Login }        from '../pages/Login'
-import { Cadastro }     from '../pages/Cadastro'
-import { PerfilUsuario } from '../pages/PerfilUsuario'
-import { Admin }        from '../pages/Admin'
-import { PrivateRoute } from '../components/PrivateRoute'
+import { Home }                    from '../pages/Home'
+import { Praias }                  from '../pages/Praias'
+import { BeachDetail }             from '../pages/BeachDetail'
+import { Sobre }                   from '../pages/Sobre'
+import { RecomendacaoInteligente } from '../pages/RecomendacaoInteligente'
+import { Login }                   from '../pages/Login'
+import { Cadastro }                from '../pages/Cadastro'
+import { PerfilUsuario }           from '../pages/PerfilUsuario'
+import { Admin }                   from '../pages/Admin'
+import { PrivateRoute }            from '../components/PrivateRoute'
 
 /**
  * Mapeamento central de rotas da aplicação.
@@ -26,11 +28,13 @@ export function AppRoutes() {
   return (
     <Routes>
       {/* Públicas */}
-      <Route path="/"          element={<Home />} />
-      <Route path="/praias/:id" element={<BeachDetail />} />
-      <Route path="/sobre"     element={<Sobre />} />
-      <Route path="/login"     element={<Login />} />
-      <Route path="/cadastro"  element={<Cadastro />} />
+      <Route path="/"                element={<Home />} />
+      <Route path="/praias"          element={<Praias />} />
+      <Route path="/praias/:id"      element={<BeachDetail />} />
+      <Route path="/sobre"           element={<Sobre />} />
+      <Route path="/recomendacao"    element={<RecomendacaoInteligente />} />
+      <Route path="/login"           element={<Login />} />
+      <Route path="/cadastro"        element={<Cadastro />} />
 
       {/* Protegidas — requer autenticação */}
       <Route

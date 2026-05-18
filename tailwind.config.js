@@ -14,6 +14,16 @@ export default {
         teal:    '#0F6E56',    // verde-teal (balneabilidade própria, sucesso)
         fundo:   '#E6F1FB',    // azul muito claro (background padrão das páginas)
       },
+      keyframes: {
+        fadeSlideUp: {
+          '0%':   { opacity: '0', transform: 'translateY(24px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)'    },
+        },
+      },
+      animation: {
+        // Usada no FeaturedBeachCard da Home
+        'fadeSlideUp': 'fadeSlideUp 0.4s ease-out both',
+      },
       fontFamily: {
         // Stack idêntico ao projeto original — SF Pro em Apple, Segoe UI no Windows
         sans: [
